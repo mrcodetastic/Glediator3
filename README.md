@@ -10,6 +10,10 @@
 4. When using this example, ensure to use the correct settings as follows for a 64x32 panel:
 ![TPM2 Serial Connection Settings](tpm2_matrix_settings.jpg)
 
+Note: The serial port will differ depending on your computer and what your Arduino / ESP32 is connected to.
+
+5. Then click 'Serial Open' to get things started.
+
 
 ## Credits
 
