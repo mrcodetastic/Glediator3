@@ -4,7 +4,7 @@ Unofficial port (reverse engineer) of the Glediator LED Matrix controlling softw
  
 ## How to use
 
-1. Install  the JAVA JRE onto your computer.
+1. Install  the JAVA JRE onto your computer: https://jdk.java.net/14/
 2. Execute `java -jar Glediator3-binary-XXXX.jar` (from the releases directory)
 3. Connect to your Matrix_Panel via. Serial Port once having loaded 'Glediator3_TPM2_MatrixPanel' example onto it. Get this from here: https://github.com/mrfaptastic/ESP32-RGB64x32MatrixPanel-I2S-DMA/tree/master/examples/Glediator3_TPM2_MatrixPanel
 
