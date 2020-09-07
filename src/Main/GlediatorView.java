@@ -60,7 +60,11 @@ import javax.swing.JLabel;
 import javax.swing.JComboBox;
 import java.awt.Color;
 import java.util.Observer;
+import java.util.Properties;
+
 import javax.swing.JFrame;
+
+import com.jtattoo.plaf.aluminium.AluminiumLookAndFeel;
 import com.jtattoo.plaf.hifi.HiFiLookAndFeel.*;
 import com.fazecast.jSerialComm.*;
 
@@ -432,7 +436,12 @@ public class GlediatorView extends JFrame implements Observer
     public static void main(final String[] args) {
         try {
          //   UIManager.setLookAndFeel("com.jtattoo.plaf.hifi.HiFiLookAndFeel");	
-        	   UIManager.setLookAndFeel("com.jtattoo.plaf.aluminium.AluminiumLookAndFeel");
+	        	Properties props = new Properties();
+	        	//props.put("logoString", "my company");
+	        	props.put("logoString", " ");
+	        	AluminiumLookAndFeel.setCurrentTheme(props);
+	        	//UIManager.setLookAndFeel("com.jtattoo.plaf.aero.AeroLookAndFeel");
+        	    UIManager.setLookAndFeel("com.jtattoo.plaf.aluminium.AluminiumLookAndFeel");
         }
         catch (Exception ex) {
             System.out.println(ex);
