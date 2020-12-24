@@ -581,7 +581,7 @@ public class MainOptionWindow extends JFrame
     
     private void cbox_protocolActionPerformed(final ActionEvent evt) {
         final String type = this.cbox_protocol.getSelectedItem().toString();
-        if (type.equals("No Data Transmission") || type.equals("Artnet") || type.equals("TPM2.Net")) {
+        if (type.equals("No Data Transmission") || type.equals("Artnet") || type.equals("TPM2_Net")) {
             this.setMappingEditable(false);
         }
         else {
@@ -636,10 +636,12 @@ public class MainOptionWindow extends JFrame
     private void pb_artnet_socket_closeActionPerformed(final ActionEvent evt) {
         String status = "";
         final String type = this.cbox_protocol.getSelectedItem().toString();
+        
+        System.out.println(type.toString());
         if (type.equals("Artnet")) {
             status = this.glediator_model.output.stopArtnet();
         }
-        if (type.equals("TPM2.Net")) {
+        if (type.equals("TPM2_Net")) {
             status = this.glediator_model.output.stopTPM2net();
         }
         this.lbl_artnet_staus.setText(status);

@@ -15,35 +15,43 @@ import java.net.DatagramSocket;
 public class TPM2NetOutput
 {
     DatagramSocket tpm2_socket;
+    InetAddress dest_ip;
     private int size_x;
     private int size_y;
-    private int num_unis;
-    private InetAddress[] ip_addr;
-    private int[] uni_id;
-    private int[] data_length;
+    //private int num_unis;
+    //private InetAddress[] ip_addr;
+    //private int[] uni_id;
+    //private int[] data_length;
     private int tpm2_port;
-    private int[][] patch_lut;
+    //private int[][] patch_lut;
     private byte[] frame_rgb;
     private int sequence;
     private byte[] output_buffer;
     private byte[] data_buffer;
     private boolean socket_open;
     private static final int TPM2_NET_HEADER_LENGTH = 6;
+    private static final int TPM2_NET_MAX_PACKET_PAYLOAD_SIZE = 1200; 
     
     public TPM2NetOutput() {
         this.socket_open = false;
-        this.ip_addr = new InetAddress[1];
+        //this.dest_ip = new InetAddress[1];
         try {
-            this.ip_addr[0] = InetAddress.getByName("localhost");
+            //this.dest_ip = InetAddress.getByName("localhost");
+        	
+        	this.dest_ip = InetAddress.getByName("192.168.43.214");
+            
+            System.out.print("Destination IP Address:");
+            System.out.println(dest_ip.toString());
+            
         }
         catch (UnknownHostException ex) {
             System.out.println(ex);
         }
         this.tpm2_port = 65506;
         this.sequence = 1;
-        this.output_buffer = new byte[6];
-        this.data_buffer = new byte[1];
-        this.patch_lut = new int[1][1];
+        this.output_buffer = new byte[TPM2_NET_MAX_PACKET_PAYLOAD_SIZE + TPM2_NET_HEADER_LENGTH + 2]; // header + payload + end byte (0x36)
+        //this.data_buffer = new byte[1];
+        //this.patch_lut = new int[1][1];
     }
     
     public String startTPM2_Net() {
@@ -63,6 +71,7 @@ public class TPM2NetOutput
     
     public String stopTPM2_Net() {
         String status;
+        System.out.println("Attempting to close socket");
         if (this.socket_open) {
             this.tpm2_socket.close();
             status = "TPM2.Net socket closed.";
@@ -75,16 +84,18 @@ public class TPM2NetOutput
     }
     
     public void set_parameters(final int[][] _unis, final int[][][] _map) {
-        this.num_unis = _unis.length;
-        this.size_x = _map.length;
-        this.size_y = _map[0].length;
-        this.ip_addr = new InetAddress[this.num_unis];
-        this.uni_id = new int[this.num_unis];
-        this.data_length = new int[this.num_unis];
-        final byte[] ip = new byte[4];
+        //this.num_unis = _unis.length;
+        this.size_x = 64; //_map.length;
+        this.size_y = 32; //_map[0].length;
+        //this.ip_addr = new InetAddress[this.num_unis];
+        //this.uni_id = new int[this.num_unis];
+        //this.data_length = new int[this.num_unis];
+        //final byte[] ip = new byte[4];
         this.frame_rgb = new byte[this.size_x * this.size_y * 3];
-        this.patch_lut = new int[this.num_unis][1];
-        int max_data_length = 0;
+        //this.patch_lut = new int[this.num_unis][1];
+        //int max_data_length = 0;
+        
+        /*
         for (int i = 0; i < this.num_unis; ++i) {
             for (int j = 0; j < 4; ++j) {
                 ip[j] = (byte)_unis[i][j];
@@ -118,6 +129,7 @@ public class TPM2NetOutput
         }
         (this.output_buffer = new byte[6 + max_data_length + 1])[6 + max_data_length] = 0;
         (this.data_buffer = new byte[max_data_length])[max_data_length - 1] = 0;
+        */
     }
     
     public boolean get_TPM2_Status() {
@@ -125,6 +137,7 @@ public class TPM2NetOutput
     }
     
     public void send_out_one_frame(final Color[] frame) {
+    	
         if (this.socket_open) {
             for (int x = 0; x < this.size_x; ++x) {
                 for (int y = 0; y < this.size_y; ++y) {
@@ -134,6 +147,34 @@ public class TPM2NetOutput
                     this.frame_rgb[3 * index + 2] = (byte)frame[index].getBlue();
                 }
             }
+            
+            int packets_required = (int) Math.ceil((this.frame_rgb.length + TPM2_NET_HEADER_LENGTH) / TPM2_NET_MAX_PACKET_PAYLOAD_SIZE);
+            System.out.print("Going to need packets:");
+            System.out.println(packets_required);
+            
+            byte payload[]      = new byte[TPM2_NET_MAX_PACKET_PAYLOAD_SIZE];
+            int  payload_len    = TPM2_NET_MAX_PACKET_PAYLOAD_SIZE;
+                                    
+            for (int packet_num = 0; packet_num < packets_required; packet_num++)
+            {
+            	
+            	if ( packet_num < packets_required ) {
+                    System.arraycopy(this.frame_rgb, packet_num*TPM2_NET_MAX_PACKET_PAYLOAD_SIZE, payload, 0, TPM2_NET_MAX_PACKET_PAYLOAD_SIZE);            		            		
+            	}
+            	else
+            	{
+            		// Whatever crap is left
+            		payload_len = this.frame_rgb.length - (packet_num*TPM2_NET_MAX_PACKET_PAYLOAD_SIZE); 
+            		System.arraycopy(this.frame_rgb, packet_num*TPM2_NET_MAX_PACKET_PAYLOAD_SIZE, payload, 0, payload_len);            		            		
+            	}
+            	
+            	// Who cares about the patching crap.
+            	this.send_out_tpm2_packet(this.dest_ip, 0, packets_required, payload_len, payload);
+            }
+            
+            
+            
+            /*
             for (int uni = 0; uni < this.num_unis; ++uni) {
                 for (int channel = 0; channel < this.data_length[uni]; ++channel) {
                     final int position = this.patch_lut[uni][channel];
@@ -150,6 +191,11 @@ public class TPM2NetOutput
                     this.sequence = 1;
                 }
             }
+            */
+        }
+        else
+        {
+        	System.out.println("TPM2_Net Socket not open!");
         }
     }
     
