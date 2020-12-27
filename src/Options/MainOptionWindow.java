@@ -36,6 +36,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JTextField;
 import javax.swing.JButton;
 import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JComboBox;
@@ -64,6 +65,12 @@ public class MainOptionWindow extends JFrame
     private JLabel jLabel7;
     private JLabel jLabel8;
     private JLabel jLabel9;
+    
+    private JLabel jLabel_dest_ip;
+    
+    private JLabel jLabel_InfoBox;    
+    private JTextArea jInfoBox;
+    
     private JPanel jPanel1;
     private JPanel jPanel3;
     private JPanel jPanel4;
@@ -86,6 +93,7 @@ public class MainOptionWindow extends JFrame
     private JTextField tf_boards_y;
     private JTextField tf_pixel_per_board_x;
     private JTextField tf_pixel_per_board_y;
+    private JTextField tpm2net_destination_ip_addr;
     
     public MainOptionWindow(final GlediatorModel glediator_model) {
         this.initComponents();
@@ -129,6 +137,12 @@ public class MainOptionWindow extends JFrame
         this.jLabel7 = new JLabel();
         this.tf_pixel_per_board_x = new JTextField();
         this.tf_pixel_per_board_y = new JTextField();
+        this.tpm2net_destination_ip_addr = new JTextField();
+        this.jLabel_dest_ip = new JLabel();
+      
+        this.jLabel_InfoBox = new JLabel();
+        this.jInfoBox = new JTextArea();
+        
         this.jLabel6 = new JLabel();
         this.tf_boards_x = new JTextField();
         this.jLabel8 = new JLabel();
@@ -233,6 +247,46 @@ public class MainOptionWindow extends JFrame
         gridBagConstraints.fill = 1;
         gridBagConstraints.insets = new Insets(2, 2, 2, 2);
         this.jPanel8.add(this.jLabel15, gridBagConstraints);
+        
+        
+        this.jLabel_dest_ip.setText("Dest. IP Addr:");
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.fill = 1;
+        gridBagConstraints.insets = new Insets(2, 2, 2, 2);
+        this.jPanel8.add(this.jLabel_dest_ip, gridBagConstraints);
+        
+        
+        gridBagConstraints.gridx = 1;     
+        this.tpm2net_destination_ip_addr.setText("192.168.43.0");
+        this.tpm2net_destination_ip_addr.setEnabled(true);
+        this.tpm2net_destination_ip_addr.setMinimumSize(new Dimension(100, 20));
+        this.tpm2net_destination_ip_addr.setPreferredSize(new Dimension(100, 20));        
+        this.jPanel8.add(this.tpm2net_destination_ip_addr, gridBagConstraints);
+        
+        
+        this.jLabel_InfoBox.setText("Important Notes:");
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.fill = 1;
+        gridBagConstraints.insets = new Insets(2, 2, 2, 2);
+        this.jPanel8.add(this.jLabel_InfoBox, gridBagConstraints);
+        
+        gridBagConstraints.gridx = 1;  
+        this.jInfoBox.setText("To use TPM2_Net:\n 1) Provide Dest. IP address of ESP32 with TPM2_Net Sketch.\n 2) Open Socket\nAll other output options are ignored.");
+        this.jInfoBox.setEnabled(true);
+        this.jInfoBox.setLineWrap(true);
+        this.jInfoBox.setEditable(false);
+        this.jInfoBox.setMinimumSize(new Dimension(100, 80));
+        this.jInfoBox.setPreferredSize(new Dimension(100, 80));           
+        this.jPanel8.add(this.jInfoBox, gridBagConstraints);
+              
+        
+        
+        
+        
         this.jLabel17.setText("Board Order");
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -370,6 +424,9 @@ public class MainOptionWindow extends JFrame
         gridBagConstraints.fill = 1;
         gridBagConstraints.insets = new Insets(2, 2, 2, 2);
         this.jPanel1.add(this.jLabel8, gridBagConstraints);
+        
+        
+        
         this.tf_boards_y.setText("2");
         this.tf_boards_y.setEnabled(false);
         this.tf_boards_y.setMaximumSize(new Dimension(50, 20));
@@ -501,7 +558,7 @@ public class MainOptionWindow extends JFrame
         gridBagConstraints.fill = 1;
         gridBagConstraints.insets = new Insets(2, 2, 2, 2);
         this.jPanel4.add(this.pb_artnet_socket_close, gridBagConstraints);
-        this.jLabel11.setText("Socket is bound to Ports 0x1936 / 0xFFE2");
+        this.jLabel11.setText("Socket is bound to port 65506.");
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -509,7 +566,7 @@ public class MainOptionWindow extends JFrame
         gridBagConstraints.fill = 1;
         gridBagConstraints.insets = new Insets(2, 2, 2, 2);
         this.jPanel4.add(this.jLabel11, gridBagConstraints);
-        this.pb_patching.setText("Patch Artnet/TPM2.Net");
+        this.pb_patching.setText("Patch Artnet");
         this.pb_patching.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(final ActionEvent evt) {
@@ -603,13 +660,13 @@ public class MainOptionWindow extends JFrame
         final boolean is_artnet = type.equals("Artnet");
         final boolean is_tpmnet = type.equals("TPM2_Net");
         if (is_artnet || is_tpmnet) {
-            this.apply_changes();
+            this.apply_changes(); /// save the destination ip address
             if (!this.glediator_model.patcher.check_para()) {
                 if (is_artnet) {
                     status = this.glediator_model.output.startArtnet();
                 }
                 if (is_tpmnet) {
-                    status = this.glediator_model.output.startTPM2net();
+                    status = this.glediator_model.output.startTPM2net(this.glediator_model.options.tpm2net_dest_ip);
                 }
                 this.lbl_artnet_staus.setText(status);
                 this.cbox_protocol.setEnabled(false);
@@ -738,6 +795,10 @@ public class MainOptionWindow extends JFrame
         this.glediator_model.options.setOutputType((OutputType)this.cbox_protocol.getSelectedItem());
         this.glediator_model.options.setColorOrder((ColorOrder)this.cbox_color_order.getSelectedItem());
         this.glediator_model.options.setBaudRate((BaudRate)this.cbox_baud_rate.getSelectedItem());
+        
+        // Set the destination IP for TPM2Net
+        this.glediator_model.options.tpm2net_dest_ip = this.tpm2net_destination_ip_addr.getText();
+        
         this.glediator_model.triggerOptionChange();
     }
     

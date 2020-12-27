@@ -20,6 +20,7 @@ public class Options
     public static final MappingOrder DEFAULT_PIXEL_ORDER;
     public static final ColorOrder DEFAULT_COLOR_ORDER;
     public static final BaudRate DEFAULT_BAUD_RATE;
+        
     private int[] matrix_size;
     private int[] board_size;
     private int[] number_of_boards;
@@ -29,6 +30,9 @@ public class Options
     private MappingOrder pixel_order;
     private ColorOrder color_order;
     private BaudRate baud_rate;
+    
+    String tpm2net_dest_ip;
+    
     
     public Options() {
         this.matrix_size = new int[2];

@@ -10,16 +10,20 @@
 RGB64x32MatrixPanel_I2S_DMA matrix;
 WiFiUDP Udp;
 
+#define PAYLOAD_SIZE_MAX 1200 // don't change this
+
 /* -------------------------- Class Includes  -------------------------- */
 // Wifi settings
-const char* ssid = "XXX";
-const char* password = "YYY";
+const char* ssid = "";
+const char* password = "";
 
 // TPM2_NET
 #define NO_OF_LEDS MATRIX_WIDTH*MATRIX_HEIGHT
 uint8_t frame_buffer[NO_OF_LEDS * 3];
 uint8_t packet_buffer[1500];
 
+unsigned long last_fps_display_ms     = 0;
+int frames_since_last_fps_stats = 0; 
 
 void setup()
 {
@@ -59,7 +63,7 @@ void loop()
  *  As per hacked TPM2NetOutput.java:
 
         private static final int TPM2_NET_HEADER_LENGTH = 6;
-        private static final int TPM2_NET_MAX_PACKET_PAYLOAD_SIZE = 1200; 
+        private static final int TPM2_NET_MAX_PACKET_PAYLOAD_SIZE = PAYLOAD_SIZE_MAX; 
     
         this.output_buffer[0] = -100; // magic number
         this.output_buffer[1] = -38; // signed 8 bit = 11011010 
@@ -92,19 +96,17 @@ void loop()
           memset(frame_buffer, 0x00, sizeof(packet_buffer));
         }
 
-        if ( len > 1200) // 1207 bytes will be received for a full payload (1200 b) + headers ( 7 b)
+        if ( len > PAYLOAD_SIZE_MAX) // 1207 bytes will be received for a full payload (PAYLOAD_SIZE_MAX b) + headers ( 7 b)
         {
-                memcpy(&frame_buffer[1200*packet_seq], &packet_buffer[6], 1200);
+                memcpy(&frame_buffer[PAYLOAD_SIZE_MAX*packet_seq], &packet_buffer[6], PAYLOAD_SIZE_MAX);
         }
         else
         {
-                memcpy(&frame_buffer[1200*packet_seq], &packet_buffer[6], len-7);
+                memcpy(&frame_buffer[PAYLOAD_SIZE_MAX*packet_seq], &packet_buffer[6], len-7);
         }
 
-        // clear packet buffer
-        memset(packet_buffer, 0x00, sizeof(packet_buffer));
 
-        // Got the last packet?
+        // Got the last packet? End of the frame then, so display
         if ( packet_seq == packet_num-1)
         {
 
@@ -121,6 +123,17 @@ void loop()
                 } // end x
             } // end row          
 
+            if ((millis() - last_fps_display_ms) > 5000)
+            {
+                Serial.print("Receiving at: ");
+                Serial.print( frames_since_last_fps_stats / 5, DEC);
+                Serial.println (" fps");
+
+                frames_since_last_fps_stats = 0;
+                last_fps_display_ms = millis();
+            }
+
+            frames_since_last_fps_stats++;
           
         }
         
@@ -129,6 +142,9 @@ void loop()
        
     }    
   } // end packetSize
+
+  // always clear packet buffer
+  memset(packet_buffer, 0x00, sizeof(packet_buffer));  
   
 } // end loop
 

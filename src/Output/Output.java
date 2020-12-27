@@ -14,11 +14,16 @@ public class Output
     TPM2NetOutput tpm_net;
     MiniDMXProtocol mini_dmx;
     TPM2SerialProtocol tpm_serial;
-    TPM2LiteSerialProtocol tpm_lite_serial;    
+    //TPM2LiteSerialProtocol tpm_lite_serial;    
     GlediatorProtocol glediator_protocol;
     private OutputType output_type;
     byte[] output_buffer;
     ColorOrder color_order;
+    String tpm2net_dest_ip;
+    
+    Options options;
+    
+    int x, y;
     
     public Output() {
         this.serial = new SerialOutput();
@@ -26,7 +31,7 @@ public class Output
         this.tpm_net = new TPM2NetOutput();
         this.mini_dmx = new MiniDMXProtocol();
         this.tpm_serial = new TPM2SerialProtocol();
-        this.tpm_lite_serial = new TPM2LiteSerialProtocol();
+     //   this.tpm_lite_serial = new TPM2LiteSerialProtocol();
         this.glediator_protocol = new GlediatorProtocol();
         this.output_buffer = new byte[0];
         this.output_type = OutputType.NO_DATA_TRANSMISSION;
@@ -34,7 +39,12 @@ public class Output
     }
     
     public void configureOutput(final Options options) {
+    	
+    	this.options = options;
+    	
         this.output_type = options.getOutputType();
+        x = options.getMatrixSize()[0];
+        y = options.getMatrixSize()[1];
         this.setOutputBufferSize(options.getMatrixSize()[0] * options.getMatrixSize()[1]);
         this.color_order = options.getColorOrder();
     }
@@ -75,10 +85,12 @@ public class Output
                 this.output_buffer = new byte[frame_size * 3 + 5];
                 break;
             }
+            /*
             case TPM2_LITE: {
                 this.output_buffer = new byte[frame_size * 2 + 5]; // 16 bit color in 2 bytes hence hte * 2
                 break;
-            }            
+            } 
+            */           
         }
     }
     
@@ -102,8 +114,13 @@ public class Output
         return this.artnet.stopArtnet();
     }
     
-    public String startTPM2net() {
-        return this.tpm_net.startTPM2_Net();
+    public String startTPM2net(String dest_s) {
+    	
+    	this.tpm_net.set_parameters(this.options.getMatrixSize()[0],this.options.getMatrixSize()[1]);
+    	
+    	
+    	
+        return this.tpm_net.startTPM2_Net(dest_s);
     }
     
     public String stopTPM2net() {
@@ -123,7 +140,7 @@ public class Output
     }
     
     public void setTPM2netParameters(final int[][] unis, final int[][][] map) {
-        this.tpm_net.set_parameters(unis, map);
+        this.tpm_net.set_parameters(x,y);
     }
     
     public void doOutput(final Color[] frame) {
@@ -137,11 +154,13 @@ public class Output
                 this.serial.sendSerialData(this.output_buffer, this.output_buffer.length);
                 break;
             }
+            /*
             case TPM2_LITE: {
                 this.tpm_lite_serial.do_protocol(frame, this.output_buffer, this.color_order);
                 this.serial.sendSerialData(this.output_buffer, this.output_buffer.length);
                 break;
-            }            
+            } 
+            */           
             case TPM2_NET: {
                 this.tpm_net.send_out_one_frame(frame);
                 break;

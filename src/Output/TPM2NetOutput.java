@@ -35,6 +35,7 @@ public class TPM2NetOutput
     public TPM2NetOutput() {
         this.socket_open = false;
         //this.dest_ip = new InetAddress[1];
+        /*
         try {
             //this.dest_ip = InetAddress.getByName("localhost");
         	
@@ -47,6 +48,7 @@ public class TPM2NetOutput
         catch (UnknownHostException ex) {
             System.out.println(ex);
         }
+        */
         this.tpm2_port = 65506;
         this.sequence = 1;
         this.output_buffer = new byte[TPM2_NET_MAX_PACKET_PAYLOAD_SIZE + TPM2_NET_HEADER_LENGTH + 2]; // header + payload + end byte (0x36)
@@ -54,8 +56,10 @@ public class TPM2NetOutput
         //this.patch_lut = new int[1][1];
     }
     
-    public String startTPM2_Net() {
-        String status;
+    public String startTPM2_Net(String dest_ip) {
+        
+    	// Open Sending Socket
+    	String status;
         try {
             this.tpm2_socket = new DatagramSocket(this.tpm2_port);
             status = "TPM2.Net socket open.";
@@ -66,6 +70,21 @@ public class TPM2NetOutput
             status = "Failed to open TPM2.Net socket!";
             this.socket_open = false;
         }
+        
+        // Setup destination
+        try {
+        	this.dest_ip = InetAddress.getByName(dest_ip);
+            
+            System.out.print("Destination IP Address:");
+            System.out.println(dest_ip.toString());
+            
+        }
+        catch (UnknownHostException ex) {
+            System.out.println(ex);
+            
+        }             
+        
+        
         return status;
     }
     
@@ -83,10 +102,14 @@ public class TPM2NetOutput
         return status;
     }
     
-    public void set_parameters(final int[][] _unis, final int[][][] _map) {
+    public void set_parameters(int x_size, int y_size) {
+    	
+    	System.out.print("X width: "); System.out.println(x_size);
+    	System.out.print("Y height: "); System.out.println(y_size);
+    	
         //this.num_unis = _unis.length;
-        this.size_x = 64; //_map.length;
-        this.size_y = 32; //_map[0].length;
+        this.size_x = x_size; //_map.length;
+        this.size_y = y_size; //_map[0].length;
         //this.ip_addr = new InetAddress[this.num_unis];
         //this.uni_id = new int[this.num_unis];
         //this.data_length = new int[this.num_unis];
@@ -138,6 +161,9 @@ public class TPM2NetOutput
     
     public void send_out_one_frame(final Color[] frame) {
     	
+    	//System.out.print("Frame Length is: ");
+    	//System.out.println(frame.length);
+    	
         if (this.socket_open) {
             for (int x = 0; x < this.size_x; ++x) {
                 for (int y = 0; y < this.size_y; ++y) {
@@ -149,24 +175,24 @@ public class TPM2NetOutput
             }
             
             int packets_required = (int) Math.ceil( (double) this.frame_rgb.length/ TPM2_NET_MAX_PACKET_PAYLOAD_SIZE);
-            //System.out.println( (double) this.frame_rgb.length/ TPM2_NET_MAX_PACKET_PAYLOAD_SIZE);
+            System.out.println( (double) this.frame_rgb.length/ TPM2_NET_MAX_PACKET_PAYLOAD_SIZE);
             
-         //   System.out.print("Going to need packets:");
-        //    System.out.println(packets_required);
+            System.out.print("Going to need packets:");
+            System.out.println(packets_required);
             
             byte payload[]      = new byte[TPM2_NET_MAX_PACKET_PAYLOAD_SIZE];
             int  payload_len    = TPM2_NET_MAX_PACKET_PAYLOAD_SIZE;
             
-          //  System.out.println("Sending Frame");
-          //  System.out.print("Need to send "); System.out.print(this.frame_rgb.length); System.out.println(" bytes"); 
+            System.out.println("Sending Frame");
+            System.out.print("Need to send "); System.out.print(this.frame_rgb.length); System.out.println(" bytes"); 
                                     
             for (int packet_num = 0; packet_num < packets_required; packet_num++)
             {
-           // 	System.out.print("Packet ");
-            //	System.out.println(packet_num);
+            	System.out.print("Packet ");
+            	System.out.println(packet_num);
             	
-            //	System.out.print("Starting a the following position: ");
-            //	System.out.println(packet_num*TPM2_NET_MAX_PACKET_PAYLOAD_SIZE);
+            	System.out.print("Starting a the following position: ");
+            	System.out.println(packet_num*TPM2_NET_MAX_PACKET_PAYLOAD_SIZE);
             	
             	if ( packet_num < packets_required-1 ) {
                     System.arraycopy(this.frame_rgb, packet_num*TPM2_NET_MAX_PACKET_PAYLOAD_SIZE, payload, 0, TPM2_NET_MAX_PACKET_PAYLOAD_SIZE);            		            		
@@ -174,12 +200,12 @@ public class TPM2NetOutput
             	else
             	{
             		// Whatever crap is left
-            //		System.out.println("Last Packet!");
+            		System.out.println("Last Packet!");
             		payload_len = this.frame_rgb.length - (packet_num*TPM2_NET_MAX_PACKET_PAYLOAD_SIZE); 
             		System.arraycopy(this.frame_rgb, packet_num*TPM2_NET_MAX_PACKET_PAYLOAD_SIZE, payload, 0, payload_len);            		            		
             	}
             	
-            //	System.out.print("Payload size: "); System.out.println(payload_len);
+            	System.out.print("Payload size: "); System.out.println(payload_len);
             	
             	// Who cares about the patching crap.
             	this.send_out_tpm2_packet(this.dest_ip, 0, packets_required, packet_num, payload_len, payload);
