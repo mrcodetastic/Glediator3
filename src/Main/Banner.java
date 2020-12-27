@@ -62,7 +62,7 @@ public class Banner extends JFrame
         gridBagConstraints.fill = 1;
         gridBagConstraints.insets = new Insets(5, 5, 5, 5);
         this.getContentPane().add(this.pb_close, gridBagConstraints);
-        this.jLabel1.setText("Glediator (C) 2014 - All rights reserved by Ren\u00e9 Heller");
+        this.jLabel1.setText("Glediator (C) 2014 - All rights reserved by Ren\u00e9 Heller. Modified by github.com/mrfaptastic");
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
