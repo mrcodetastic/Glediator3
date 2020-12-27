@@ -346,9 +346,10 @@ public final class GlediatorModel extends Observable implements Observer
     }
     
     public void start() {
-        (this.frame_timer = new Timer(40, this.frame_timer_task)).setRepeats(true);
+    	// Set speed of interface
+        (this.frame_timer = new Timer(30, this.frame_timer_task)).setRepeats(true);
         this.frame_timer.start();
-        this.frame_timer.start();
+        //this.frame_timer.start();
     }
     
     public void startFading() {
