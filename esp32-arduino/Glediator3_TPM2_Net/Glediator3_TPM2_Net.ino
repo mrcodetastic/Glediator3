@@ -1,4 +1,6 @@
-// CUSTOM / HACKED FORM OF TPM2_NET based on Gladiator.
+// CUSTOM / HACKED FORM OF TPM2_NET based on Glediator3.
+
+// Refer to /Glediator3/src/Output/TPM2NetOutput.java
 
 /* -------------------------- Class Includes  -------------------------- */
 #include <WiFi.h>
