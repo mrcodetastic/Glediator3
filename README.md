@@ -1,5 +1,7 @@
 # Glediator3
-Unofficial port (reverse engineer) of the Glediator LED Matrix controlling software, with some minor improvements so the Serial Port connection works cross-platform.
+Unofficial port (reverse engineer) of the Glediator LED Matrix controlling software, with some minor improvements so that:
+* Serial Port connection works cross-platform.
+* WiFi connectivity to an ESP32 is super simple with just a destination IP address required from the software.
 
  
 ## How to use (via. WiFi)
