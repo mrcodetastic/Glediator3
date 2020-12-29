@@ -5,6 +5,7 @@
 package Draw;
 
 import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import java.awt.Graphics;
 import java.awt.Color;
 import javax.swing.JPanel;
@@ -36,6 +37,7 @@ public class DrawPanel extends JPanel
         this.block = false;
     }
     
+    /*
     public void paintComponent(final Graphics g) {
         super.paintComponent(g);
         if (!this.block) {
@@ -69,4 +71,39 @@ public class DrawPanel extends JPanel
             }
         }
     }
+    */
+    
+    // Fixed for larger resolutions
+    // FIXME: No longer supports the drawing of 'spacing' between pixels.
+    public void paintComponent(final Graphics g) {
+        super.paintComponent(g);
+        if (!this.block) {
+             Graphics2D g2d = (Graphics2D)g;
+             int[] diameter = new int[2];
+             
+             int width = this.getWidth();
+             int height = this.getHeight();  
+             
+                 
+            // Create input image
+			BufferedImage inputImage = new BufferedImage(this.frame_size[0], this.frame_size[1], BufferedImage.TYPE_INT_ARGB);
+			
+            for (int x = 0; x < this.frame_size[0]; ++x) {
+                for (int y = 0; y < this.frame_size[1]; ++y) {
+                	inputImage.setRGB(x, y, this.image[y * this.frame_size[0] + x].getRGB());
+                }
+            }
+			
+						
+            // Create OUTPUT image
+			//BufferedImage out_image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+			
+			// scales the input image to the output image
+	      //  Graphics2D g2d = out_image.createGraphics();
+	        g2d.drawImage(inputImage, 0, 0, width, height, null);
+	      //  g2d.dispose();
+	 
+	    }
+	    
+	}
 }
