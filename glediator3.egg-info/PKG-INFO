@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: glediator3
+Version: 1.0.0
+Summary: Real-time LED matrix visualizer and mixer
+Requires-Python: >=3.10
+Requires-Dist: numpy>=1.26
+Requires-Dist: PySide6>=6.6
+Requires-Dist: Pillow>=10.0
+Requires-Dist: websockets>=12.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: ruff>=0.3; extra == "dev"

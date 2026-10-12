@@ -1,0 +1,2 @@
+[console_scripts]
+glediator = glediator.app:main

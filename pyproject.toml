@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "glediator3"
+version = "1.0.0"
+description = "Real-time LED matrix visualizer and mixer"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.26", "PySide6>=6.6", "Pillow>=10.0", "websockets>=12.0", "mss>=9.0", "soundcard>=0.4.3"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "ruff>=0.3"]
+
+[project.scripts]
+glediator = "glediator.app:main"
+
+[tool.setuptools.packages.find]
+include = ["glediator*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
