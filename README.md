@@ -1,6 +1,6 @@
 # Glediator Python / Qt6 rebuild
 
-This is a fresh Python implementation of the Glediator LED-matrix visualizer, guided by `plans/rebuild-architecture.md`. It keeps an isolated NumPy rendering core, five-layer scenes, common generator/filter/mixer components, a two-live-source crossfader, and a three-preview Qt6 studio UI. The workspace columns are Source A, Source B and Final Output; each source's live preview sits above its effect list and controls. Use **Add effect** and double-click an effect in the picker to add it. Strobe and playlist features are intentionally omitted.
+This is a fresh Python implementation of the Glediator LED-matrix visualizer. It keeps an isolated NumPy rendering core, five-layer scenes, common generator/filter/mixer components, a two-live-source crossfader, and a three-preview Qt6 studio UI. The workspace columns are Source A, Source B and Final Output; each source's live preview sits above its effect list and controls. Use **Add effect** and double-click an effect in the picker to add it. Strobe and playlist features are intentionally omitted.
 
 A standalone Arduino receiver sketch using the HUB75 DMA library is in [`esp32-firmware`](esp32-firmware/README.md).
 
