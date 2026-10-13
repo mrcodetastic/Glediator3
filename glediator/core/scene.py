@@ -6,8 +6,8 @@ import numpy as np
 
 from glediator.core.frame import new_frame
 from glediator.core.pipeline import apply_filter, mix
-from glediator.generators import create_generator, generator_names
-from glediator.generators.settings import default_parameters, sanitize_parameters
+from glediator.effects import (create_effect, default_effect_parameters, effect_names,
+                               sanitize_effect_parameters)
 
 
 @dataclass
@@ -28,7 +28,7 @@ class Scene:
         self.name = name
         self.width, self.height = width, height
         self.layers = [Layer(generator_name="Plasma" if i == 0 else "Black", enabled=(i == 0), configured=(i == 0)) for i in range(5)]
-        self._generators = [create_generator(layer.generator_name) for layer in self.layers]
+        self._generators = [create_effect(layer.generator_name) for layer in self.layers]
         self.active_layer = 0
         self._frame = new_frame(width, height)
 
@@ -39,12 +39,13 @@ class Scene:
     def set_generator(self, index: int, name: str) -> None:
         if name == "Expanding Objects":
             name = "Expanding Circles"
-        if name not in generator_names():
-            raise ValueError(f"Unknown generator: {name}")
+        if name not in effect_names():
+            raise ValueError(f"Unknown effect: {name}")
+        self._generators[index].cleanup()
         self.layers[index].generator_name = name
         self.layers[index].configured = True
-        self.layers[index].parameters = default_parameters(name)
-        self._generators[index] = create_generator(name)
+        self.layers[index].parameters = default_effect_parameters(name)
+        self._generators[index] = create_effect(name)
         self.layers[index].enabled = True
 
     def add_layer(self, name: str) -> int | None:
@@ -56,8 +57,9 @@ class Scene:
         return None
 
     def remove_layer(self, index: int) -> None:
+        self._generators[index].cleanup()
         self.layers[index] = Layer(generator_name="Black", enabled=False, configured=False)
-        self._generators[index] = create_generator("Black")
+        self._generators[index] = create_effect("Black")
 
     def move_layer(self, source: int, destination: int) -> None:
         if source == destination:
@@ -71,7 +73,7 @@ class Scene:
         for layer, generator in zip(self.layers, self._generators):
             if not layer.enabled:
                 continue
-            image = generator.render(self.width, self.height, time_seconds, layer.parameters, audio_state)
+            image = generator.drawFrame(self.width, self.height, time_seconds, audio_state)
             image = apply_filter(image, layer.filter_name)
             if layer.brightness != 100:
                 image = np.clip(image.astype(np.float32) * (layer.brightness / 100.0), 0, 255).astype(np.uint8)
@@ -102,9 +104,13 @@ class Scene:
             name = saved.get("generator", "Black")
             if name == "Expanding Objects":
                 name = "Expanding Circles"
-            if name not in generator_names():
+            if name not in effect_names():
                 name = "Black"
-            self._generators[index] = create_generator(name)
+            self._generators[index].cleanup()
+            effect = create_effect(name)
+            parameters = sanitize_effect_parameters(name, saved.get("parameters"))
+            effect.configure(parameters)
+            self._generators[index] = effect
             self.layers[index] = Layer(
                 generator_name=name,
                 enabled=bool(saved.get("enabled", index == 0)),
@@ -112,9 +118,9 @@ class Scene:
                 brightness=max(0, min(100, int(saved.get("brightness", 100)))),
                 filter_name=saved.get("filter", "None") if saved.get("filter") in ("None", "Invert", "Monochrome", "Threshold") else "None",
                 mix_mode=saved.get("mix_mode", "Add") if saved.get("mix_mode") in ("Add", "Subtract", "Multiply", "Difference", "Screen", "Maximum") else "Add",
-                parameters=sanitize_parameters(name, saved.get("parameters")),
+                parameters=parameters,
             )
 
     def close(self) -> None:
         for generator in self._generators:
-            generator.close()
+            generator.cleanup()

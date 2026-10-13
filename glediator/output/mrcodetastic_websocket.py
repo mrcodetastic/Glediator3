@@ -64,6 +64,8 @@ class MrCodetasticWebSocketOutput:
                 with connect(self.url, open_timeout=2, close_timeout=1, max_size=None) as websocket:
                     self.connected = True
                     self.last_error = ""
+                    last_sent_frame = None
+                    last_sent_mapping = None
                     while not self._stop.is_set():
                         try:
                             frame = self._queue.get(timeout=0.2)
@@ -71,12 +73,22 @@ class MrCodetasticWebSocketOutput:
                             continue
                         if frame is None:
                             break
-                        websocket.send(self.encode_frame(frame, self.mapping))
+                        mapping = self.mapping
+                        if self._frames_match(frame, last_sent_frame) and mapping == last_sent_mapping:
+                            continue
+                        websocket.send(self.encode_frame(frame, mapping))
+                        last_sent_frame = frame
+                        last_sent_mapping = mapping
             except Exception as exc:  # Network failures should never stop rendering.
                 self.connected = False
                 self.last_error = str(exc)
                 time.sleep(1.0)
         self.connected = False
+
+    @staticmethod
+    def _frames_match(frame: np.ndarray, previous: np.ndarray | None) -> bool:
+        """Exact comparison is inexpensive for LED matrices and avoids hash collisions."""
+        return previous is not None and frame.shape == previous.shape and np.array_equal(frame, previous)
 
     @classmethod
     def encode_frame(cls, frame: np.ndarray, mapping: str = "horizontal-snake") -> bytes:

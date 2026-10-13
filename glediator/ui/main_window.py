@@ -5,12 +5,13 @@ from PySide6.QtGui import QColor, QFont, QIntValidator
 from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFormLayout,
                                QColorDialog, QFontComboBox, QFrame, QGroupBox, QHBoxLayout,
                                QInputDialog, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMainWindow, QMessageBox,
-                               QPushButton, QSlider, QSpinBox, QVBoxLayout, QWidget)
+                               QPushButton, QSlider, QSpinBox, QTableWidget, QTableWidgetItem,
+                               QHeaderView, QVBoxLayout, QWidget)
 
 from glediator.core.config import EngineConfig
 from glediator.core.engine import RenderEngine
 from glediator.generators import generator_names
-from glediator.generators.settings import GENERATOR_SETTINGS, default_parameters
+from glediator.effects import (default_effect_parameters, effect_descriptions, effect_settings)
 from glediator.mapper import MAPPING_NAMES
 from glediator.network.discovery import DeviceDiscovery
 from glediator.output.mrcodetastic_websocket import MrCodetasticWebSocketOutput
@@ -20,16 +21,40 @@ from glediator.ui.preview import FramePreview
 class EffectPickerDialog(QDialog):
     """Immediate, visible generator list; double-click an entry to choose it."""
 
-    def __init__(self, parent: QWidget, names: list[str]) -> None:
+    def __init__(self, parent: QWidget, names: list[str], descriptions: dict[str, str] | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Add effect")
-        self.setMinimumSize(320, 420)
+        self.setMinimumSize(600, 460)
+        self.resize(720, 560)
         layout = QVBoxLayout(self)
         hint = QLabel("Double-click an effect to add it to this source.")
         hint.setWordWrap(True)
         layout.addWidget(hint)
-        self.effects = QListWidget()
-        self.effects.addItems(names)
+        self.effects = QTableWidget(len(names), 2)
+        self.effects.setHorizontalHeaderLabels(("Effect", "Description"))
+        for column in range(2):
+            header_item = self.effects.horizontalHeaderItem(column)
+            header_item.setTextAlignment(
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            header_font = header_item.font()
+            header_font.setBold(True)
+            header_item.setFont(header_font)
+        self.effects.horizontalHeader().setStyleSheet(
+            "QHeaderView::section { font-weight: 700; text-align: left; }")
+        self.effects.verticalHeader().setVisible(False)
+        self.effects.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.effects.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.effects.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.effects.setWordWrap(True)
+        self.effects.setShowGrid(True)
+        self.effects.setStyleSheet("QTableWidget { gridline-color: #2b3642; }")
+        self.effects.setColumnWidth(0, 190)
+        self.effects.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.effects.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        for row, name in enumerate(names):
+            self.effects.setItem(row, 0, QTableWidgetItem(name))
+            self.effects.setItem(row, 1, QTableWidgetItem((descriptions or {}).get(name, "")))
+            self.effects.setRowHeight(row, 34)
         self.effects.itemDoubleClicked.connect(self._choose)
         layout.addWidget(self.effects, 1)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel)
@@ -37,8 +62,8 @@ class EffectPickerDialog(QDialog):
         layout.addWidget(buttons)
         self.selected_effect: str | None = None
 
-    def _choose(self, item: QListWidgetItem) -> None:
-        self.selected_effect = item.text()
+    def _choose(self, item: QTableWidgetItem) -> None:
+        self.selected_effect = self.effects.item(item.row(), 0).text()
         self.accept()
 
 
@@ -78,9 +103,14 @@ class MainWindow(QMainWindow):
         self._sync_source_controls("left")
         self._sync_source_controls("right")
         self._apply_style()
+        self.beacon_status = QLabel("Listening for CODETASTIC beacons on UDP 20586")
+        self.beacon_status.setObjectName("beaconStatus")
+        self.beacon_status.setContentsMargins(0, 0, 4, 0)
+        self.statusBar().setSizeGripEnabled(False)
+        self.statusBar().setContentsMargins(4, 2, 4, 6)
+        self.statusBar().addPermanentWidget(self.beacon_status)
         self.discovery = DeviceDiscovery()
         self.discovery.start()
-        self.statusBar().showMessage("Listening for CODETASTIC beacons on UDP 20586")
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._refresh)
         self.timer.start(33)
@@ -155,7 +185,7 @@ class MainWindow(QMainWindow):
         root = QWidget()
         self.setCentralWidget(root)
         layout = QVBoxLayout(root)
-        layout.setContentsMargins(24, 5, 24, 16)
+        layout.setContentsMargins(12, 3, 12, 8)
         header = QHBoxLayout()
         title = QLabel("GLEDIATOR")
         title.setObjectName("appTitle")
@@ -261,8 +291,7 @@ class MainWindow(QMainWindow):
         manual_row.addWidget(self.manual_connect_button)
         self.manual_form.setVisible(False)
         network_layout.addWidget(self.manual_form)
-        output_column.addWidget(network_panel)
-        output_column.addStretch(1)
+        output_column.addWidget(network_panel, 1)
 
         columns.addLayout(source_a_column, 1)
         columns.addLayout(source_b_column, 1)
@@ -466,7 +495,7 @@ class MainWindow(QMainWindow):
         scene = self.engine.left_scene if side == "left" else self.engine.right_scene
         if sum(layer.configured for layer in scene.layers) >= 5:
             return
-        picker = EffectPickerDialog(self, generator_names())
+        picker = EffectPickerDialog(self, generator_names(), effect_descriptions())
         if picker.exec() != QDialog.DialogCode.Accepted or picker.selected_effect is None:
             return
         index = self.engine.add_layer(side, picker.selected_effect)
@@ -499,7 +528,7 @@ class MainWindow(QMainWindow):
     def _show_generator_settings(self, side: str, layer_index: int) -> None:
         scene = self.engine.left_scene if side == "left" else self.engine.right_scene
         layer = scene.layers[layer_index]
-        schema = GENERATOR_SETTINGS.get(layer.generator_name, {})
+        schema = effect_settings(layer.generator_name)
         if not schema:
             QMessageBox.information(self, "Effect settings", f"{layer.generator_name} has no adjustable parameters.")
             return
@@ -507,7 +536,7 @@ class MainWindow(QMainWindow):
         dialog.setWindowTitle(f"{layer.generator_name} settings · {side.upper()} / Layer {layer_index + 1}")
         form = QFormLayout(dialog)
         editors = {}
-        values = default_parameters(layer.generator_name)
+        values = default_effect_parameters(layer.generator_name)
         values.update(layer.parameters)
         for key, spec in schema.items():
             kind, default, minimum, maximum, step = spec
@@ -534,7 +563,12 @@ class MainWindow(QMainWindow):
                 editor.setDecimals(3)
                 editor.setValue(float(values.get(key, default)))
             editors[key] = editor
-            form.addRow(key.replace("_", " ").title(), editor)
+            label = {
+                "bins": "Bin count (0 = panel width)",
+                "bin_width": "Bin width (pixels)",
+                "capture_fps": "Capture rate (FPS, max 30)",
+            }.get(key, key.replace("_", " ").title())
+            form.addRow(label, editor)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
@@ -582,11 +616,12 @@ class MainWindow(QMainWindow):
     def _discovery_ready(self) -> None:
         if not self.discovered_ips:
             self.device_hint.setText("No devices found yet. Listening for CODETASTIC beacons…")
-        self.statusBar().showMessage("Listening for CODETASTIC beacons on UDP 20586")
+        self.beacon_status.setText("Listening for CODETASTIC beacons on UDP 20586")
 
     def _discovery_error(self, message: str) -> None:
         self.device_hint.setText("Discovery unavailable. Use Connect manually.")
         self.device_hint.setVisible(True)
+        self.beacon_status.setText("CODETASTIC discovery unavailable")
         self.statusBar().showMessage(message)
 
     def _show_manual_connection(self, visible: bool) -> None:
@@ -719,10 +754,11 @@ class MainWindow(QMainWindow):
             QMenu { background:#f5f7fa; color:#1b2733; border:1px solid #b9c2cc; }
             QMenu::item:selected { background:#d4e0ed; color:#102438; }
             QLabel#appTitle { font-size:22pt; font-weight:700; letter-spacing:2px; color:#f4f7fb; }
-            QLabel#subtitle { color:#93a8bd; font-size:8pt; letter-spacing:2px; padding-left:10px; }
+            QLabel#subtitle { color:#93a8bd; font-size:8pt; letter-spacing:2px; padding-left:10px; padding-top:6px; }
             QFrame#headerDivider { color:#39434e; background:#39434e; max-height:1px; }
             QLabel#previewTitle { color:#a8b8c9; font-size:9pt; font-weight:600; letter-spacing:1px; }
             QLabel#status { color:#67dfa3; font-size:9pt; }
+            QLabel#beaconStatus { color:#8ea0b4; font-size:8pt; }
             QWidget#controlPanel { background:#111923; border:1px solid #263343; border-radius:9px; }
             QGroupBox { background:#111923; border:1px solid #263343; border-radius:9px; margin-top:10px; padding:10px; font-weight:600; }
             QGroupBox::title { subcontrol-origin:margin; left:12px; padding:0 5px; color:#a8b8c9; }
@@ -735,5 +771,7 @@ class MainWindow(QMainWindow):
             QPushButton:hover { background:#409cf4; }
             QSlider::groove:horizontal { height:5px; background:#34475b; border-radius:2px; }
             QSlider::handle:horizontal { background:#ffb84a; width:15px; margin:-6px 0; border-radius:7px; }
-            QStatusBar { color:#8ea0b4; }
+            QStatusBar { color:#8ea0b4; border:0; }
+            QStatusBar::item { border:0; }
+            QLabel#beaconStatus { border:0; background:transparent; }
         """)

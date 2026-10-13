@@ -92,11 +92,12 @@ class RenderEngine:
                 item.mix_mode = mix_mode
 
     def set_generator_parameters(self, side: str, layer: int, parameters: dict) -> None:
-        from glediator.generators.settings import sanitize_parameters
+        from glediator.effects import sanitize_effect_parameters
         with self._lock:
             scene = self._scene(side)
             target = scene.layers[layer]
-            target.parameters = sanitize_parameters(target.generator_name, parameters)
+            target.parameters = sanitize_effect_parameters(target.generator_name, parameters)
+            scene._generators[layer].configure(target.parameters)
 
     def export_state(self) -> dict:
         with self._lock:
@@ -138,11 +139,19 @@ class RenderEngine:
                 audio_layers = [layer for scene in (self.left_scene, self.right_scene)
                                 for layer in scene.layers
                                 if layer.configured and layer.enabled
-                                and layer.generator_name in ("VU Meter", "Simple Spectrum")]
+                                and layer.generator_name in ("VU Meter", "Simple Spectrum", "Spectrum Analyser")]
                 if audio_layers:
                     self.audio_capture.set_source(audio_layers[0].parameters.get("source", "System Output"))
+                    auto_layers = [layer for layer in audio_layers
+                                   if layer.generator_name in ("VU Meter", "Spectrum Analyser")
+                                   and layer.parameters.get("auto_sensitivity", "Off") == "On"]
+                    self.audio_capture.set_auto_sensitivity(
+                        bool(auto_layers),
+                        max((float(layer.parameters.get("sensitivity", 2.5)) for layer in auto_layers), default=2.5),
+                    )
                     self.audio_capture.start()
                 else:
+                    self.audio_capture.set_auto_sensitivity(False)
                     self.audio_capture.stop()
                 audio_state = self.audio_capture.snapshot()
                 left = self.left_scene.render(t, audio_state)

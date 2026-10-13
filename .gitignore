@@ -2,3 +2,34 @@
 autoSave.gled
 bin
 
+# Python bytecode and interpreter caches
+__pycache__
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging/build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Test and static-analysis caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pytype/
+.coverage
+coverage.xml
+htmlcov/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+Desktop.ini

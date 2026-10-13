@@ -7,6 +7,8 @@ Requires-Dist: numpy>=1.26
 Requires-Dist: PySide6>=6.6
 Requires-Dist: Pillow>=10.0
 Requires-Dist: websockets>=12.0
+Requires-Dist: mss>=9.0
+Requires-Dist: soundcard>=0.4.3
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0; extra == "dev"
 Requires-Dist: ruff>=0.3; extra == "dev"

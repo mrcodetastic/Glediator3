@@ -3,16 +3,21 @@ from __future__ import annotations
 import numpy as np
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QImage, QPixmap
-from PySide6.QtWidgets import QLabel, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QGroupBox, QLabel, QSizePolicy, QVBoxLayout
 
 
-class FramePreview(QWidget):
+class FramePreview(QGroupBox):
     def __init__(self, title: str, accent: str, matrix_width: int = 64, matrix_height: int = 32) -> None:
-        super().__init__()
+        super().__init__(title)
         self._aspect = max(1, matrix_width) / max(1, matrix_height)
         self._source_image: QImage | None = None
         self.setObjectName("previewCard")
-        self.setStyleSheet(f"#previewCard {{ background:#111923; border:1px solid #263343; border-top:3px solid {accent}; border-radius:9px; }}")
+        self.setStyleSheet(
+            f"QGroupBox#previewCard {{ background:#111923; border:1px solid #263343; "
+            f"border-top:3px solid {accent}; border-radius:9px; margin-top:10px; padding:10px; }}"
+            "QGroupBox#previewCard::title { subcontrol-origin:margin; left:12px; "
+            "padding:0 5px; color:#a8b8c9; font-size:9pt; font-weight:600; letter-spacing:1px; }"
+        )
         size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         size_policy.setHeightForWidth(True)
         self.setSizePolicy(size_policy)
@@ -21,14 +26,11 @@ class FramePreview(QWidget):
         self.setMinimumSize(240, 210)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(14, 12, 14, 14)
-        self.title = QLabel(title)
-        self.title.setObjectName("previewTitle")
         self.image = QLabel("Waiting for first frame…")
         self.image.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image.setMinimumSize(1, 1)
         self.image.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.image.setStyleSheet("background:#080c11; border-radius:5px; color:#627386;")
-        layout.addWidget(self.title)
         layout.addWidget(self.image, 1)
 
     def hasHeightForWidth(self) -> bool:
@@ -38,7 +40,7 @@ class FramePreview(QWidget):
         layout = self.layout()
         margins = layout.contentsMargins()
         image_width = max(1, width - margins.left() - margins.right())
-        return (margins.top() + margins.bottom() + self.title.sizeHint().height()
+        return (margins.top() + margins.bottom() + self.fontMetrics().height()
                 + layout.spacing() + round(image_width / self._aspect))
 
     def sizeHint(self) -> QSize:
